@@ -28,85 +28,97 @@ public class Good_Twin : Role
         }
     }
 
-    public override ActedInfo bcq(Character charRef)
+    public override ActedInfo GetInfo(Character charRef)
     {
         return new ActedInfo("", null);
     }
 
-    public override ActedInfo bcr(Character charRef)
+    public override ActedInfo GetBluffInfo(Character charRef)
     {
         return new ActedInfo("", null);
     }
 
-    public override void bcs(ETriggerPhase trigger, Character charRef)
+    public override void Act(ETriggerPhase trigger, Character charRef)
     {
         if(trigger == ETriggerPhase.Start)
         {
-            charRef.statuses.fm(ECharacterStatus.UnkillableByDemon, charRef);
             Il2CppSystem.Collections.Generic.List<Character> chars = new Il2CppSystem.Collections.Generic.List<Character>(Gameplay.CurrentCharacters.Pointer);
             Character pickedChar = new Character();
-            chars = Characters.Instance.gq(chars, ECharacterType.Villager);
-            chars = Characters.Instance.gx(chars, EAlignment.Good);
-            pickedChar = chars[UnityEngine.Random.Range(0, chars.Count - 1)];
-            foreach(Character c in Gameplay.CurrentCharacters)
+            chars = Characters.Instance.FilterCharacterType(chars, ECharacterType.Villager);
+            chars = Characters.Instance.FilterAlignmentCharacters(chars, EAlignment.Good);
+            if(chars.Count > 0)
             {
-                if(c == pickedChar)
+                pickedChar = chars[UnityEngine.Random.Range(0, chars.Count)];
+                foreach (Character c in Gameplay.CurrentCharacters)
                 {
-                    if (allDatas.Length == 0)
+                    if (c == pickedChar)
                     {
-                        var loadedCharList = Resources.FindObjectsOfTypeAll(Il2CppType.Of<CharacterData>());
-                        if (loadedCharList != null)
+                        if (allDatas.Length == 0)
                         {
-                            allDatas = new CharacterData[loadedCharList.Length];
-                            for (int i = 0; i < loadedCharList.Length; i++)
+                            var loadedCharList = Resources.FindObjectsOfTypeAll(Il2CppType.Of<CharacterData>());
+                            if (loadedCharList != null)
                             {
-                                allDatas[i] = loadedCharList[i]!.Cast<CharacterData>();
+                                allDatas = new CharacterData[loadedCharList.Length];
+                                for (int i = 0; i < loadedCharList.Length; i++)
+                                {
+                                    allDatas[i] = loadedCharList[i]!.Cast<CharacterData>();
+                                }
                             }
                         }
-                    }
-                    
-                    for (int i = 0; i < allDatas.Length; i++)
-                    {
-                        if (allDatas[i].characterId == "EvilTwin_VP")
+
+                        for (int i = 0; i < allDatas.Length; i++)
                         {
-                            if (c.dl().characterId != allDatas[i].characterId)
+                            if (allDatas[i].characterId == "EvilTwin_VP")
                             {
-                                c.dv(allDatas[i]);
-                                break;
+                                if (c.GetRegisterAs().characterId != allDatas[i].characterId)
+                                {
+                                    c.Init(allDatas[i]);
+                                    break;
+                                }
                             }
                         }
+                        break;
                     }
-                    break;
                 }
             }
         }
         if (trigger != ETriggerPhase.Day) return;
+        string info = $"Im a lonely twin :(";
+        onActed?.Invoke(new ActedInfo(info, null));
     }
 
-    public override void bct(Character charRef)
+    public override void ActOnDied(Character charRef)
     {
-        if(charRef.killedByDemon == false )
-            PlayerController.PlayerInfo.health.jl(3);
+        if(charRef.killedByDemon == false)
+            PlayerController.PlayerInfo.health.Damage(3);
     }
 
-    public override CharacterData bcz(Character charRef)
+    public override CharacterData GetBluffIfAble(Character charRef)
     {
-        charRef.statuses.fm(ECharacterStatus.HealthyBluff, charRef);
+        charRef.statuses.AddStatus(ECharacterStatus.HealthyBluff, charRef);
         foreach (Character c in Gameplay.CurrentCharacters)
         {
-            if (c.dl().characterId == "EvilTwin_VP")
+            if (c.GetRegisterAs().characterId == "EvilTwin_VP")
             {
                 if (c.bluff != null)
                     return c.bluff;
                 else
                 {
-                    CharacterData bluff = Characters.Instance.gd();
-                    Gameplay.Instance.mm(bluff.type, bluff);
+                    CharacterData bluff = Characters.Instance.GetRandomUniqueVillagerBluff();
+                    Gameplay.Instance.AddScriptCharacterIfAble(bluff.type, bluff);
                     return bluff;
                 }
             }
         }
         return null; //used in case something is missed
+    }
+
+    public override bool CheckIfCanBeKilled(Character charRef)
+    {
+        if (charRef.statuses.statuses.Contains(ECharacterStatus.HealthyBluff))
+            return charRef.bluff.role.CheckIfCanBeKilled(charRef);
+        else
+            return true;
     }
 
     public Good_Twin() : base(ClassInjector.DerivedConstructorPointer<Good_Twin>())
