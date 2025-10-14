@@ -1,4 +1,4 @@
-﻿using Il2Cpp;
+using Il2Cpp;
 using Il2CppFIMSpace.Basics;
 using Il2CppInterop.Runtime;
 using Il2CppInterop.Runtime.Injection;
@@ -27,22 +27,22 @@ public class Evil_Twin : Role
         }
     }
 
-    public override ActedInfo bcq(Character charRef)
+    public override ActedInfo GetInfo(Character charRef)
     {
         return new ActedInfo("", null);
     }
 
-    public override ActedInfo bcr(Character charRef)
-    {
+    public override ActedInfo GetBluffInfo(Character charRef) 
+    { 
         return new ActedInfo("", null);
     }
 
-    public override void bct(Character charRef)
+    public override void ActOnDied(Character charRef)
     {
         Character chars = new Character();
         foreach(Character c in Gameplay.CurrentCharacters)
         {
-            if(c.dl().characterId == "GoodTwin_VP")
+            if(c.GetRegisterAs().characterId == "GoodTwin_VP")
             {
                 chars = c;
                 break;
@@ -50,21 +50,20 @@ public class Evil_Twin : Role
         }
         if(chars.state != ECharacterState.Dead)
         {
-            PlayerController.PlayerInfo.health.jl(-5);
-            int health = PlayerController.PlayerInfo.health.value.jw();
+            PlayerController.PlayerInfo.health.Damage(-5);
+            int health = PlayerController.PlayerInfo.health.value.GetValue();
             if(health > 10)
             {
-                PlayerController.PlayerInfo.health.jl(health - 10);
+                PlayerController.PlayerInfo.health.Damage(health - 10);
             }
         }
     }
 
-    public override CharacterData bcz(Character charRef)
+    public override CharacterData GetBluffIfAble(Character charRef)
     {
-        charRef.statuses.fm(ECharacterStatus.UnkillableByDemon, charRef);
         foreach(Character c in Gameplay.CurrentCharacters)
         {
-            if(c.dl().characterId == "GoodTwin_VP")
+            if(c.GetRegisterAs().characterId == "GoodTwin_VP")
             {
                 if (c.bluff != null)
                 {
@@ -72,8 +71,8 @@ public class Evil_Twin : Role
                 }
                 else
                 {
-                    CharacterData bluff = Characters.Instance.gd();
-                    Gameplay.Instance.mm(bluff.type, bluff);
+                    CharacterData bluff = Characters.Instance.GetRandomUniqueVillagerBluff();
+                    Gameplay.Instance.AddScriptCharacterIfAble(bluff.type, bluff);
                     return bluff;
                 }
             }
