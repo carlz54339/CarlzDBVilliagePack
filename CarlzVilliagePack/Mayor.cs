@@ -1,3 +1,5 @@
+using CarlzVilliagePack;
+using HarmonyLib;
 using Il2Cpp;
 using Il2CppFIMSpace.Basics;
 using Il2CppInterop.Runtime;
@@ -8,10 +10,11 @@ using Il2CppSystem.Collections.Generic;
 using MelonLoader;
 using System;
 using System.Collections.Generic;
+using System.Drawing;
 using System.Runtime.InteropServices;
 using System.Xml.Linq;
 using UnityEngine;
-using CarlzVilliagePack;
+using UnityEngine.Diagnostics;
 using static Il2CppSystem.Globalization.CultureInfo;
 using static MelonLoader.MelonLaunchOptions;
 
@@ -19,7 +22,6 @@ namespace CarlzVilliagePack;
 [RegisterTypeInIl2Cpp]
 public class Mayor : Role
 {
-    public CharacterData[] allDatas = Il2CppSystem.Array.Empty<CharacterData>();
     public override string Description
     {
         get
@@ -28,52 +30,44 @@ public class Mayor : Role
         }
     }
 
-    public override ActedInfo bcq(Character charRef)
+    public override ActedInfo GetInfo(Character charRef)
     {
         return new ActedInfo("", null);
     }
 
-    public override ActedInfo bcr(Character charRef)
+    public override ActedInfo GetBluffInfo(Character charRef)
     {
         return new ActedInfo("", null);
     }
 
-    public override void bcs(ETriggerPhase trigger, Character charRef)
+    public override void Act(ETriggerPhase trigger, Character charRef)
     {
-        
-    }
-
-    public override void bcx(ETriggerPhase trigger, Character charRef)
-    {
-        if(trigger == ETriggerPhase.Start)
+        if (trigger == ETriggerPhase.Start)
         {
-            if (allDatas.Length == 0)
+            Il2CppSystem.Collections.Generic.List<Character> charList = new Il2CppSystem.Collections.Generic.List<Character>(Gameplay.CurrentCharacters.Pointer);
+            charList = CharactersHelper.GetSortedListWithCharacterFirst(charList, charRef);
+
+            charList.RemoveAt(0);
+            Il2CppSystem.Collections.Generic.List<Character> ajacentEvils = new Il2CppSystem.Collections.Generic.List<Character>();
+            if (charList[0].alignment == EAlignment.Evil)
             {
-                var loadedCharList = Resources.FindObjectsOfTypeAll(Il2CppType.Of<CharacterData>());
-                if (loadedCharList != null)
-                {
-                    allDatas = new CharacterData[loadedCharList.Length];
-                    for (int i = 0; i < loadedCharList.Length; i++)
-                    {
-                        allDatas[i] = loadedCharList[i]!.Cast<CharacterData>();
-                    }
-                }
+                ajacentEvils.Add(charList[0]);
             }
-            if (charRef.statuses.statuses.Contains(ECharacterStatus.Corrupted))
+            if (charList[charList.Count - 1].alignment == EAlignment.Evil)
             {
-                for (int i = 0; i < allDatas.Length; i++)
-                {
-                    if (allDatas[i].characterId == "Bribed_VP")
-                    {
-                        if (charRef.dl().characterId != allDatas[i].characterId)
-                        {
-                            charRef.dx(allDatas[i]);
-                            break;
-                        }
-                    }
-                }
+                ajacentEvils.Add(charList[charList.Count - 1]);
             }
+
+            if (ajacentEvils.Count <= 0) return;
+            charRef.alignment = EAlignment.Evil;
+            charRef.statuses.AddStatus(BribedStatus.bribed, charRef);
+            charRef.statuses.AddStatus(ECharacterStatus.MessedUpByEvil, charRef);
         }
+    }
+
+    public override CharacterData GetBluffIfAble(Character charRef)
+    {
+        return null;
     }
 
     public Mayor() : base(ClassInjector.DerivedConstructorPointer<Mayor>())
@@ -85,5 +79,22 @@ public class Mayor : Role
     public Mayor(System.IntPtr ptr) : base(ptr)
     {
 
+    }
+}
+
+public static class BribedStatus
+{
+    public static ECharacterStatus bribed = (ECharacterStatus)505;
+
+    [HarmonyPatch(typeof(Character), nameof(Character.RevealAllReal))]
+    public static class pvt
+    {
+        public static void Postfix(Character __instance)
+        {
+            if (__instance.statuses.Contains(bribed))
+            {
+                __instance.chName.text = __instance.dataRef.name.ToUpper() + "<color=#FF00FF><size=18>\nBribed</color></size>";
+            }
+        }
     }
 }
