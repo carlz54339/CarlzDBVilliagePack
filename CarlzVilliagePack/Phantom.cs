@@ -1,4 +1,4 @@
-﻿using CarlzVilliagePack;
+using CarlzVilliagePack;
 using HarmonyLib;
 using Il2Cpp;
 using Il2CppFIMSpace.Basics;
@@ -112,33 +112,112 @@ public static class PossessedStatus
             }
         }
     }
-}
 
-public static class scoutInfo
-{
-    [HarmonyPatch(typeof(Scout), nameof(Scout.GetInfo))]
-    public static class si
+    [HarmonyPatch(typeof(Dreamer), nameof(Dreamer.CharacterPicked))]
+    public static class td
     {
-        public static ActedInfo Postfix(Character __instance)
+        public static void Postfix(Dreamer __instance)
         {
-            string info = "";
+            Character c = CharacterPicker.PickedCharacters[0];
+            Il2CppSystem.Collections.Generic.List<Character> pickedCharacters = new Il2CppSystem.Collections.Generic.List<Character>();
+            pickedCharacters.Add(c);
+            if (c.statuses.statuses.Contains(pos))
+            {
+                string info = $"#{c.id} could be: Phantom";
+                __instance.onActed?.Invoke(new ActedInfo(info, pickedCharacters));
+                Debug.Log($"{info}");
+            }
+        }
+    }
+
+    [HarmonyPatch(typeof(Dreamer), nameof(Dreamer.CharacterPickedDrunk))]
+    public static class ld
+    {
+        public static void Postfix(Dreamer __instance)
+        {
+            Character c = CharacterPicker.PickedCharacters[0];
+            Il2CppSystem.Collections.Generic.List<Character> pickedCharacters = new Il2CppSystem.Collections.Generic.List<Character>();
+            pickedCharacters.Add(c);
+            CharacterData pd = new CharacterData();
+            pd = ProjectContext.Instance.gameData.GetCharacterDataOfId("Phantom_VP");
+            if (c.statuses.statuses.Contains(pos))
+            {
+                string info = $"#{c.id} could be: ";
+                Il2CppSystem.Collections.Generic.List<CharacterData> evilCharacters = new Il2CppSystem.Collections.Generic.List<CharacterData>(Gameplay.Instance.GetScriptCharacters().Pointer);
+                evilCharacters = Characters.Instance.FilterAlignmentCharacters(evilCharacters, EAlignment.Evil);
+                evilCharacters.Remove(pd);
+
+                if(evilCharacters.Count == 0)
+                {
+                    evilCharacters = new Il2CppSystem.Collections.Generic.List<CharacterData>(Gameplay.Instance.GetAllAscensionCharacters().Pointer);
+                    evilCharacters = Characters.Instance.FilterAlignmentCharacters(evilCharacters, EAlignment.Evil);
+                    evilCharacters.Remove(pd);
+                }
+
+                if(evilCharacters.Count == 0)
+                    evilCharacters = new Il2CppSystem.Collections.Generic.List<CharacterData>(Gameplay.Instance.GetAllAscensionCharacters().Pointer);
+
+                CharacterData pickedChar = evilCharacters[UnityEngine.Random.Range(0, evilCharacters.Count)];
+                info += $"{pickedChar.name}";
+
+                __instance.onActed?.Invoke(new ActedInfo(info, pickedCharacters));
+                Debug.Log($"{info}");
+            }
+        }
+    }
+
+    [HarmonyPatch(typeof(Scout), nameof(Scout.GetInfo))]
+    public static class ts
+    {
+        public static void Postfix(Scout __instance, ref ActedInfo __result, Character charRef)
+        {
+            string info = $"";
 
             Il2CppSystem.Collections.Generic.List<Character> allEvils = new Il2CppSystem.Collections.Generic.List<Character>(Gameplay.CurrentCharacters.Pointer);
             allEvils = Characters.Instance.FilterRealAlignmentCharacters(allEvils, EAlignment.Evil);
             allEvils = Characters.Instance.RemoveCharacterType<Recluse>(allEvils);
 
             Character pickedEvil = allEvils[UnityEngine.Random.Range(0, allEvils.Count)];
-            Scout scout = new Scout();
-            int closestEvil = scout.GetClosestEvilToEvil(pickedEvil, __instance);
 
-            if (pickedEvil.statuses.statuses.Contains(PossessedStatus.pos))
-            {
-                pickedEvil.GetRegisterAs().name = "Phantom";
-            }
+            int steps = __instance.GetClosestEvilToEvil(pickedEvil, charRef);
 
-            info = scout.ConjourInfo(pickedEvil.GetRegisterAs().name, closestEvil);
-            ActedInfo newInfo = new ActedInfo(info);
-            return newInfo;
+            if (steps > 20)
+                info += $"There is only 1 Evil";
+            else if (steps == 0 && pickedEvil.statuses.statuses.Contains(PossessedStatus.pos))
+                info += $"Phantom is\n{steps + 1} card away\nfrom closest Evil";
+            else if (steps >= 1 && pickedEvil.statuses.statuses.Contains(PossessedStatus.pos))
+                info += $"Phantom is\n{steps + 1} cards away\nfrom closest Evil";
+            else
+                info += __instance.ConjourInfo(pickedEvil.dataRef.name, steps);
+
+            __result = new ActedInfo(info);
+        }
+    }
+
+    [HarmonyPatch(typeof(Scout), nameof(Scout.GetBluffInfo))]
+    public static class ls
+    {
+        public static void Postfix(Scout __instance, ref ActedInfo __result, Character charRef)
+        {
+            string info = $"";
+            float randomId = UnityEngine.Random.Range(0f, 1f);
+            Il2CppSystem.Collections.Generic.List<Character> allEvils = new Il2CppSystem.Collections.Generic.List<Character>(Gameplay.CurrentCharacters.Pointer);
+            allEvils = Characters.Instance.FilterRealAlignmentCharacters(allEvils, EAlignment.Evil);
+            allEvils = Characters.Instance.RemoveCharacterType<Recluse>(allEvils);
+
+            Character pickedEvil = allEvils[UnityEngine.Random.Range(0, allEvils.Count)];
+
+            int id = __instance.GetClosestEvilToEvil(pickedEvil, charRef);
+            id = Calculator.RemoveNumberAndGetRandomNumberFromList(id, 0, 3);
+
+            if (id == 0 && pickedEvil.statuses.statuses.Contains(PossessedStatus.pos))
+                info += $"Phantom is\n{id + 1} card away\nfrom closest Evil";
+            else if (id >= 1 && pickedEvil.statuses.statuses.Contains(PossessedStatus.pos))
+                info += $"Phantom is\n{id + 1} cards away\nfrom closest Evil";
+            else
+                info += __instance.ConjourInfo(pickedEvil.dataRef.name, id);
+
+            __result = new ActedInfo(info);
         }
     }
 }
