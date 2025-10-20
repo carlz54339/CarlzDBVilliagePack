@@ -1,4 +1,4 @@
-﻿global using Il2Cpp;
+global using Il2Cpp;
 using CarlzVilliagePack;
 using Il2CppDissolveExample;
 using Il2CppInterop.Runtime;
@@ -29,6 +29,7 @@ public class MainMod : MelonMod
         ClassInjector.RegisterTypeInIl2Cpp<Phantom>();
         ClassInjector.RegisterTypeInIl2Cpp<Painter>();
         ClassInjector.RegisterTypeInIl2Cpp<Executioner>();
+        ClassInjector.RegisterTypeInIl2Cpp<Germaphobe>();
     }
     public override void OnLateInitializeMelon()
     {
@@ -106,6 +107,25 @@ public class MainMod : MelonMod
         painter.cardBorderColor = new Color(0.7133f, 0.339f, 0.8679f);
         painter.color = new Color(1f, 0.935f, 0.7302f);
 
+        CharacterData germaphobe = new CharacterData();
+        germaphobe.role = new Germaphobe();
+        germaphobe.name = "Germaphobe";
+        germaphobe.description = "They are immune to corruption\nLearn who tried to corrupt them";
+        germaphobe.flavorText = "\"Paranoid of any plague. Doesn't trust anyone.\"";
+        germaphobe.hints = "Drunk and Puppet will claim that they are clean\n\nAbility will not work for possessed Germaphobes";
+        germaphobe.ifLies = "State a random Good character as the corruption source.";
+        germaphobe.picking = false;
+        germaphobe.startingAlignment = EAlignment.Good;
+        germaphobe.type = ECharacterType.Villager;
+        germaphobe.abilityUsage = EAbilityUsage.Once;
+        germaphobe.bluffable = true;
+        germaphobe.characterId = "Germaphobe_VP";
+        germaphobe.artBgColor = new Color(0.111f, 0.0833f, 0.1415f);
+        germaphobe.cardBgColor = new Color(0.26f, 0.1519f, 0.3396f);
+        germaphobe.cardBorderColor = new Color(0.7133f, 0.339f, 0.8679f);
+        germaphobe.color = new Color(1f, 0.935f, 0.7302f);
+        Characters.Instance.startGameActOrder = insertAfterAct("Alchemist", germaphobe);
+
         CharacterData good_Twin = new CharacterData();
         good_Twin.role = new Good_Twin();
         good_Twin.name = "Good Twin";
@@ -180,6 +200,25 @@ public class MainMod : MelonMod
         execBluff.cardBorderColor = new Color(0.7133f, 0.339f, 0.8679f);
         execBluff.color = new Color(1f, 0.935f, 0.7302f);
 
+        CharacterData lycaon = new CharacterData();
+        lycaon.role = new Lycaon();
+        lycaon.name = "Lycaon";
+        lycaon.description = "Kill a random Good Character on game start and lose 3 hp\nWhen killed, resurrect the Good Character";
+        lycaon.flavorText = "\"Angered Bishop and got punished by divine intervention. He doesn't regret anything.\"";
+        lycaon.hints = "Not a hint, but credit's to Bitterbug for the idea!!";
+        lycaon.ifLies = "";
+        lycaon.picking = false;
+        lycaon.startingAlignment = EAlignment.Evil;
+        lycaon.type = ECharacterType.Minion;
+        lycaon.abilityUsage = EAbilityUsage.Once;
+        lycaon.bluffable = false;
+        lycaon.characterId = "Lycaon_VP";
+        lycaon.artBgColor = new Color(1f, 0f, 0f);
+        lycaon.cardBgColor = new Color(0.0941f, 0.0431f, 0.0431f);
+        lycaon.cardBorderColor = new Color(0.8208f, 0f, 0.0241f);
+        lycaon.color = new Color(0.8491f, 0.4555f, 0f);
+        Characters.Instance.startGameActOrder = insertAfterAct("Alchemist", lycaon);
+
         CharacterData phantom = new CharacterData();
         phantom.role = new Phantom();
         phantom.name = "Phantom";
@@ -247,6 +286,8 @@ public class MainMod : MelonMod
             addRole(script.startingOutsiders, good_Twin);
             addRole(script.startingTownsfolks, painter);
             addRole(script.startingOutsiders, executioner);
+            addRole(script.startingTownsfolks, germaphobe);
+            addRole(script.startingMinions, lycaon);
         }
 
         ExecutionerStuff.getWinCons();
