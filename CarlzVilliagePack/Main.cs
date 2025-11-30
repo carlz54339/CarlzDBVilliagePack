@@ -37,7 +37,7 @@ public class MainMod : MelonMod
         detective.role = new Detective();
         detective.name = "Detective";
         detective.description = "Pick three characters, Learn how many of each role is there";
-        detective.flavorText = "\"Best detective in the villiage. Still argues with the Judge\"";
+        detective.flavorText = "\"Best detective in the village. Still argues with the Judge\"";
         detective.hints = "Wretch will be seen as an Minion";
         detective.ifLies = "Shows 3 random roles";
         detective.picking = true;
